@@ -1,0 +1,100 @@
+version: "3.9"
+
+services:
+  # ── Backend API ──────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: omms_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://omms:omms_pass@postgres:5432/omms_db
+      - SECRET_KEY=omms-production-secret-key-change-me-2024
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/logs:/app/logs
+    networks:
+      - omms_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── Frontend ─────────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    container_name: omms_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - omms_network
+
+  # ── PostgreSQL ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: omms_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=omms
+      - POSTGRES_PASSWORD=omms_pass
+      - POSTGRES_DB=omms_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - omms_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U omms -d omms_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (Cache + Queue) ────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: omms_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - omms_network
+
+  # ── Nginx Reverse Proxy ──────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: omms_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - omms_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  omms_network:
+    driver: bridge

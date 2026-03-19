@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OMMS — نظام إدارة التشغيل والصيانة</title>
+<style>
+:root{
+  --blue:#1666B8;--blue2:#0E4C8A;--blue3:#E8F2FC;
+  --green:#16A34A;--green2:#DCFCE7;
+  --red:#DC2626;--red2:#FEE2E2;
+  --orange:#D97706;--orange2:#FEF3C7;
+  --purple:#7C3AED;--purple2:#EDE9FE;
+  --cyan:#0891B2;--cyan2:#CFFAFE;
+  --gray:#F5F5F3;--gray2:#E8E7E1;--gray3:#9CA3AF;--gray4:#374151;
+  --text:#1A1A18;--sidebar:240px;--topbar:56px;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#F7F6F1;color:var(--text);direction:rtl;font-size:14px;}
+
+/* ── Layout ── */
+.app{display:flex;height:100vh;overflow:hidden;}
+.sidebar{
+  width:var(--sidebar);background:var(--blue2);color:#fff;
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;
+  height:100vh;
+}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{
+  height:var(--topbar);background:#fff;border-bottom:1px solid var(--gray2);
+  display:flex;align-items:center;gap:10px;padding:0 20px;flex-shrink:0;
+  position:sticky;top:0;z-index:40;
+}
+.content{flex:1;overflow-y:auto;padding:20px;}
+
+/* ── Sidebar ── */
+.sb-logo{padding:16px;border-bottom:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.15);}
+.sb-logo-title{font-size:15px;font-weight:700;letter-spacing:.3px;}
+.sb-logo-sub{font-size:10px;opacity:.55;margin-top:2px;}
+.sb-section{font-size:10px;opacity:.4;padding:12px 14px 4px;letter-spacing:1px;text-transform:uppercase;}
+.sb-item{
+  display:flex;align-items:center;gap:9px;padding:9px 14px;
+  cursor:pointer;color:rgba(255,255,255,.75);font-size:13px;
+  border-right:3px solid transparent;transition:all .15s;user-select:none;
+}
+.sb-item:hover{background:rgba(255,255,255,.09);color:#fff;}
+.sb-item.active{background:rgba(255,255,255,.13);color:#fff;border-right-color:#FBB024;}
+.sb-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.sb-badge{margin-right:auto;background:var(--red);color:#fff;border-radius:10px;padding:0 6px;font-size:10px;line-height:18px;}
+.sb-footer{padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);margin-top:auto;}
+.sb-version{font-size:10px;opacity:.35;margin-bottom:6px;}
+
+/* ── Topbar ── */
+.tb-title{font-size:15px;font-weight:600;color:var(--blue2);flex:1;}
+.tb-search{
+  display:flex;align-items:center;gap:8px;background:var(--gray);
+  border:1px solid var(--gray2);border-radius:8px;padding:6px 12px;flex:1;max-width:320px;
+}
+.tb-search input{border:none;outline:none;background:none;font-size:13px;flex:1;direction:rtl;font-family:inherit;}
+.tb-btn{
+  display:flex;align-items:center;gap:6px;padding:6px 13px;border-radius:8px;
+  border:none;cursor:pointer;font-size:13px;font-family:inherit;transition:all .15s;
+}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:var(--blue2);}
+.btn-secondary{background:var(--gray);color:var(--text);border:1px solid var(--gray2);}
+.btn-secondary:hover{background:var(--gray2);}
+.btn-success{background:var(--green);color:#fff;}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-warning{background:var(--orange);color:#fff;}
+.btn-outline{background:#fff;border:1px solid var(--blue);color:var(--blue);}
+.btn-sm{padding:4px 10px;font-size:12px;}
+.btn-xs{padding:3px 8px;font-size:11px;}
+.notif-wrap{position:relative;cursor:pointer;}
+.notif-dot{
+  position:absolute;top:-3px;left:-3px;width:16px;height:16px;
+  background:var(--red);color:#fff;border-radius:50%;
+  font-size:9px;display:flex;align-items:center;justify-content:center;
+  border:2px solid #fff;
+}
+.avatar{
+  width:34px;height:34px;border-radius:50%;background:var(--blue);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0;
+}
+
+/* ── Cards ── */
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--gray2);padding:18px;box-shadow:var(--shadow);}
+.card+.card{margin-top:16px;}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-title{font-size:14px;font-weight:600;color:var(--blue2);}
+.card-sub{font-size:12px;color:var(--gray3);margin-top:2px;}
+
+/* ── KPI Grid ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+.kpi-card{
+  background:#fff;border-radius:var(--radius);border:1px solid var(--gray2);
+  padding:16px;position:relative;overflow:hidden;
+}
+.kpi-card::after{
+  content:'';position:absolute;top:0;right:0;
+  width:4px;height:100%;background:var(--accent,var(--blue));
+}
+.kpi-label{font-size:11px;color:var(--gray3);margin-bottom:6px;line-height:1.3;}
+.kpi-val{font-size:26px;font-weight:700;color:var(--blue2);line-height:1;}
+.kpi-note{font-size:11px;color:var(--gray3);margin-top:5px;}
+.kpi-icon{position:absolute;bottom:10px;left:12px;font-size:22px;opacity:.12;}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.bg-blue{background:var(--blue3);color:var(--blue2);}
+.bg-green{background:var(--green2);color:#15803d;}
+.bg-red{background:var(--red2);color:var(--red);}
+.bg-orange{background:var(--orange2);color:#92400e;}
+.bg-purple{background:var(--purple2);color:var(--purple);}
+.bg-cyan{background:var(--cyan2);color:var(--cyan);}
+.bg-gray{background:var(--gray);color:var(--gray4);}
+
+/* ── Tables ── */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{
+  background:var(--blue3);color:var(--blue2);font-weight:600;
+  padding:9px 13px;text-align:right;border-bottom:2px solid #C7DDFA;
+  white-space:nowrap;
+}
+td{padding:9px 13px;border-bottom:1px solid var(--gray2);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--gray);}
+.row-alert td{background:#FFF7F7;}
+.row-warning td{background:#FFFBEB;}
+
+/* ── Progress ── */
+.prog{height:7px;background:var(--gray2);border-radius:4px;overflow:hidden;margin-top:4px;}
+.prog-fill{height:100%;border-radius:4px;transition:width .4s;}
+
+/* ── Forms ── */
+.fg{margin-bottom:14px;}
+.flabel{display:block;font-size:12px;font-weight:500;margin-bottom:5px;color:var(--gray4);}
+.finput{
+  width:100%;padding:8px 11px;border:1px solid var(--gray2);border-radius:8px;
+  font-size:13px;font-family:inherit;background:#fff;color:var(--text);
+  transition:border .15s;direction:rtl;
+}
+.finput:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(22,102,184,.1);}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.fgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+/* ── Modal ── */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;
+  display:none;align-items:center;justify-content:center;
+}
+.overlay.open{display:flex;}
+.modal{
+  background:#fff;border-radius:14px;width:580px;max-width:96vw;
+  max-height:88vh;overflow-y:auto;padding:26px;position:relative;
+}
+.modal-lg{width:760px;}
+.modal-xl{width:960px;}
+.modal-title{font-size:17px;font-weight:700;color:var(--blue2);margin-bottom:18px;}
+.modal-close{
+  position:absolute;top:18px;left:20px;background:none;border:none;
+  font-size:18px;cursor:pointer;color:var(--gray3);line-height:1;
+}
+.modal-close:hover{color:var(--red);}
+.modal-foot{
+  display:flex;gap:10px;margin-top:20px;padding-top:16px;
+  border-top:1px solid var(--gray2);
+}
+
+/* ── Alerts ── */
+.alert{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;}
+.alert-warn{background:var(--orange2);color:#78350f;border:1px solid #FDE68A;}
+.alert-danger{background:var(--red2);color:#7f1d1d;border:1px solid #FECACA;}
+.alert-success{background:var(--green2);color:#14532d;border:1px solid #BBF7D0;}
+.alert-info{background:var(--blue3);color:var(--blue2);border:1px solid #BFDBFE;}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--gray2);margin-bottom:16px;}
+.tab{
+  padding:9px 16px;font-size:13px;cursor:pointer;color:var(--gray3);
+  border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;
+}
+.tab:hover{color:var(--blue);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── Grid helpers ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.flex{display:flex;align-items:center;}
+.flex-bet{display:flex;align-items:center;justify-content:space-between;}
+.gap-2{gap:8px;}.gap-3{gap:12px;}
+.mt-1{margin-top:6px;}.mt-2{margin-top:12px;}.mt-3{margin-top:18px;}
+.mb-2{margin-bottom:12px;}
+.text-sm{font-size:12px;}.text-xs{font-size:11px;}
+.muted{color:var(--gray3);}
+.bold{font-weight:700;}
+.w-full{width:100%;}
+.center{text-align:center;}
+
+/* ── Login ── */
+.login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(140deg,var(--blue2) 0%,#1666B8 60%,#0891B2 100%);
+}
+.login-card{
+  background:#fff;border-radius:18px;padding:36px;width:400px;
+  max-width:95vw;box-shadow:0 24px 64px rgba(0,0,0,.3);
+}
+.login-logo{text-align:center;margin-bottom:24px;}
+.login-logo-icon{font-size:44px;margin-bottom:10px;}
+.login-logo h1{font-size:22px;font-weight:800;color:var(--blue2);}
+.login-logo p{font-size:12px;color:var(--gray3);margin-top:3px;}
+
+/* ── Charts (CSS-based) ── */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:100px;padding:8px 0;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:3px;transition:height .4s;}
+.bar-lbl{font-size:10px;color:var(--gray3);}
+.donut{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+.donut svg{transform:rotate(-90deg);}
+
+/* ── Upcoming list ── */
+.up-item{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--gray2);}
+.up-item:last-child{border-bottom:none;}
+.up-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.up-info{flex:1;}
+.up-name{font-size:13px;font-weight:500;}
+.up-date{font-size:11px;color:var(--gray3);}
+.up-days{font-size:12px;font-weight:600;}
+
+/* ── Checklist ── */
+.cl-item{
+  display:flex;align-items:center;gap:10px;padding:8px 11px;
+  background:var(--gray);border-radius:7px;margin-bottom:6px;font-size:13px;
+}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:20px;left:20px;background:#1A1A18;color:#fff;
+  padding:11px 18px;border-radius:10px;font-size:13px;z-index:999;
+  display:none;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:300px;
+  animation:slideIn .3s ease;
+}
+@keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── Pages ── */
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── Stat row ── */
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--gray2);}
+.stat-row:last-child{border-bottom:none;}
+.stat-label{font-size:13px;color:var(--gray3);}
+.stat-val{font-size:13px;font-weight:600;}
+
+/* ── Risk meter ── */
+.risk-meter{height:12px;background:linear-gradient(to left,#DC2626,#F59E0B,#16A34A);border-radius:6px;position:relative;}
+.risk-pointer{position:absolute;top:-4px;width:20px;height:20px;background:#fff;border:3px solid var(--blue2);border-radius:50%;transform:translateX(50%);}
+
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .g4{grid-template-columns:repeat(2,1fr);}
+  .fgrid{grid-template-columns:1fr;}
+}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--gray);}
+::-webkit-scrollbar-thumb{background:var(--gray2);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ LOGIN ═══════════════════ -->
+<div id="loginPage" class="login-wrap">
+<div class="login-card">
+  <div class="login-logo">
+    <div class="login-logo-icon">🏗️</div>
+    <h1>OMMS v2.0</h1>
+    <p>نظام إدارة التشغيل والصيانة المتكامل</p>
+    <p style="font-size:11px;color:#bbb;margin-top:2px">Operation &amp; Maintenance Management System</p>
+  </div>
+  <div class="fg">
+    <label class="flabel">اسم المستخدم / Username</label>
+    <input id="lu" class="finput" value="admin" onkeydown="if(event.key==='Enter')doLogin()"/>
+  </div>
+  <div class="fg">
+    <label class="flabel">كلمة المرور / Password</label>
+    <input id="lp" type="password" class="finput" value="admin123" onkeydown="if(event.key==='Enter')doLogin()"/>
+  </div>
+  <div id="lerr" class="alert alert-danger" style="display:none">❌ بيانات الدخول غير صحيحة</div>
+  <button class="tb-btn btn-primary w-full" style="justify-content:center;padding:11px" onclick="doLogin()">
+    🔐 تسجيل الدخول
+  </button>
+  <div class="center" style="margin-top:14px;font-size:11px;color:var(--gray3)">
+    admin/admin123 &nbsp;|&nbsp; engineer/eng123 &nbsp;|&nbsp; technician/tech123
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════ APP ═══════════════════ -->
+<div id="appMain" class="app" style="display:none">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-title">🏗️ OMMS</div>
+    <div class="sb-logo-sub">O&amp;M Management ERP</div>
+  </div>
+  <nav>
+    <div class="sb-section">الرئيسية</div>
+    <div class="sb-item active" onclick="go('dashboard',this)"><span class="sb-icon">📊</span>لوحة التحكم</div>
+
+    <div class="sb-section">الأصول والصيانة</div>
+    <div class="sb-item" onclick="go('assets',this)"><span class="sb-icon">⚙️</span>الأصول والمعدات</div>
+    <div class="sb-item" onclick="go('plans',this)"><span class="sb-icon">📅</span>خطط الصيانة</div>
+    <div class="sb-item" onclick="go('wo',this)">
+      <span class="sb-icon">📋</span>أوامر العمل
+      <span class="sb-badge" id="ovBadge">2</span>
+    </div>
+
+    <div class="sb-section">المواد والموارد</div>
+    <div class="sb-item" onclick="go('inventory',this)">
+      <span class="sb-icon">📦</span>المخازن وقطع الغيار
+      <span class="sb-badge" id="stockBadge" style="display:none">!</span>
+    </div>
+    <div class="sb-item" onclick="go('workforce',this)"><span class="sb-icon">👷</span>الكوادر البشرية</div>
+    <div class="sb-item" onclick="go('contracts',this)"><span class="sb-icon">📄</span>العقود</div>
+    <div class="sb-item" onclick="go('budget',this)"><span class="sb-icon">💰</span>الميزانية والتكاليف</div>
+
+    <div class="sb-section">الجودة والسلامة</div>
+    <div class="sb-item" onclick="go('hse',this)"><span class="sb-icon">⚠️</span>السلامة HSE</div>
+    <div class="sb-item" onclick="go('quality',this)"><span class="sb-icon">✅</span>مراقبة الجودة</div>
+
+    <div class="sb-section">التحليل والذكاء</div>
+    <div class="sb-item" onclick="go('reports',this)"><span class="sb-icon">📈</span>التقارير والKPIs</div>
+    <div class="sb-item" onclick="go('ai',this)"><span class="sb-icon">🤖</span>الذكاء الاصطناعي</div>
+    <div class="sb-item" onclick="go('notifications',this)">
+      <span class="sb-icon">🔔</span>الإشعارات
+      <span class="sb-badge" id="notifBadge">3</span>
+    </div>
+
+    <div class="sb-section">النظام</div>
+    <div class="sb-item" onclick="go('settings',this)"><span class="sb-icon">⚙️</span>الإعدادات</div>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-version">OMMS v2.0.0 — Enterprise</div>
+    <div class="sb-item" style="padding:6px 0;font-size:12px;opacity:.6" onclick="doLogout()">🚪 خروج</div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <div class="topbar">
+    <div class="tb-title" id="pageTitle">لوحة التحكم</div>
+    <div class="tb-search">
+      <span>🔍</span>
+      <input type="text" placeholder="بحث في النظام..." id="gsearch"/>
+    </div>
+    <button class="tb-btn btn-secondary" id="langBtn" onclick="toggleLang()" style="min-width:40px">EN</button>
+    <div class="notif-wrap" onclick="go('notifications',null)">
+      <span style="font-size:20px;cursor:pointer">🔔</span>
+      <div class="notif-dot" id="notifDot">3</div>
+    </div>
+    <div class="avatar" id="userAvatar" onclick="go('settings',null)">A</div>
+  </div>
+
+  <div class="content" id="mainContent">
+
+  <!-- ██ PAGE: DASHBOARD ██ -->
+  <div id="p-dashboard" class="page active">
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--accent:var(--blue)">
+        <div class="kpi-icon">⚙️</div>
+        <div class="kpi-label">إجمالي الأصول / Total Assets</div>
+        <div class="kpi-val">8</div>
+        <div class="kpi-note"><span class="badge bg-green">✅ 6 تشغيلي</span> <span class="badge bg-orange">🔧 1 صيانة</span></div>
+      </div>
+      <div class="kpi-card" style="--accent:var(--orange)">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-label">أوامر العمل النشطة</div>
+        <div class="kpi-val">5</div>
+        <div class="kpi-note"><span class="badge bg-red">⏰ 2 متأخر</span></div>
+      </div>
+      <div class="kpi-card" style="--accent:var(--green)">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-label">معدل الإنجاز / Completion Rate</div>
+        <div class="kpi-val">87%</div>
+        <div class="prog" style="margin-top:8px"><div class="prog-fill" style="width:87%;background:var(--green)"></div></div>
+      </div>
+      <div class="kpi-card" style="--accent:var(--purple)">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-label">الميزانية المستخدمة</div>
+        <div class="kpi-val">42%</div>
+        <div class="prog" style="margin-top:8px"><div class="prog-fill" style="width:42%;background:var(--purple)"></div></div>
+      </div>
+    </div>
+
+    <div class="g4 mb-2">
+      <div class="card" style="padding:14px;text-align:center">
+        <div style="font-size:28px">🟢</div>
+        <div style="font-size:20px;font-weight:700;color:var(--green);margin:4px 0">96.5%</div>
+        <div class="muted text-sm">توافر الأصول</div>
+      </div>
+      <div class="card" style="padding:14px;text-align:center">
+        <div style="font-size:28px">⏱️</div>
+        <div style="font-size:20px;font-weight:700;color:var(--blue);margin:4px 0">2.8h</div>
+        <div class="muted text-sm">MTTR — متوسط الإصلاح</div>
+      </div>
+      <div class="card" style="padding:14px;text-align:center">
+        <div style="font-size:28px">📦</div>
+        <div style="font-size:20px;font-weight:700;color:var(--orange);margin:4px 0">3</div>
+        <div class="muted text-sm">مخزون منخفض</div>
+      </div>
+      <div class="card" style="padding:14px;text-align:center">
+        <div style="font-size:28px">🏆</div>
+        <div style="font-size:20px;font-weight:700;color:var(--cyan);margin:4px 0">83.9%</div>
+        <div class="muted text-sm">OEE الكفاءة الشاملة</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <!-- Chart -->
+      <div class="card">
+        <div class="card-hd">
+          <div><div class="card-title">📊 أوامر العمل — آخر 6 أشهر</div><div class="card-sub">Work Orders Trend</div></div>
+        </div>
+        <div class="bar-chart">
+          <div class="bar-col"><div class="bar-fill" style="height:65%;background:var(--blue)"></div><div class="bar-lbl">أكت</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:80%;background:var(--blue)"></div><div class="bar-lbl">نوف</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:55%;background:var(--blue)"></div><div class="bar-lbl">ديس</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:90%;background:var(--blue)"></div><div class="bar-lbl">يناير</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:75%;background:var(--blue)"></div><div class="bar-lbl">فبراير</div></div>
+          <div class="bar-col"><div class="bar-fill" style="height:50%;background:var(--orange)"></div><div class="bar-lbl">مارس</div></div>
+        </div>
+        <div class="flex gap-3 mt-2">
+          <span class="text-xs flex gap-2"><span style="width:10px;height:10px;background:var(--blue);border-radius:2px;display:inline-block;margin-top:1px"></span>منجز</span>
+          <span class="text-xs flex gap-2"><span style="width:10px;height:10px;background:var(--orange);border-radius:2px;display:inline-block;margin-top:1px"></span>جاري</span>
+        </div>
+      </div>
+
+      <!-- Upcoming Maintenance -->
+      <div class="card">
+        <div class="card-hd">
+          <div><div class="card-title">📅 الصيانة القادمة (30 يوم)</div></div>
+          <button class="tb-btn btn-secondary btn-sm" onclick="go('plans',null)">عرض الكل</button>
+        </div>
+        <div class="up-item">
+          <div class="up-dot" style="background:var(--red)"></div>
+          <div class="up-info"><div class="up-name">اختبار المولد الشهري</div><div class="up-date">📅 2025-03-22 • شهري</div></div>
+          <div class="up-days" style="color:var(--red)">3 أيام ⚠️</div>
+        </div>
+        <div class="up-item">
+          <div class="up-dot" style="background:var(--orange)"></div>
+          <div class="up-info"><div class="up-name">فحص المضخة الأسبوعي #1</div><div class="up-date">📅 2025-03-25 • أسبوعي</div></div>
+          <div class="up-days" style="color:var(--orange)">6 أيام</div>
+        </div>
+        <div class="up-item">
+          <div class="up-dot" style="background:var(--green)"></div>
+          <div class="up-info"><div class="up-name">فحص منظومة الكلورة</div><div class="up-date">📅 2025-04-01 • أسبوعي</div></div>
+          <div class="up-days" style="color:var(--green)">13 يوم</div>
+        </div>
+        <div class="up-item">
+          <div class="up-dot" style="background:var(--blue)"></div>
+          <div class="up-info"><div class="up-name">فحص بوابة التصريف الربعي</div><div class="up-date">📅 2025-04-10 • ربع سنوي</div></div>
+          <div class="up-days" style="color:var(--blue)">22 يوم</div>
+        </div>
+        <div class="up-item">
+          <div class="up-dot" style="background:var(--purple)"></div>
+          <div class="up-info"><div class="up-name">فحص لوحة التحكم السنوي</div><div class="up-date">📅 2025-04-10 • سنوي</div></div>
+          <div class="up-days" style="color:var(--purple)">22 يوم</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-2">
+      <div class="card-hd">
+        <div class="card-title">📋 أوامر العمل الأخيرة</div>
+        <button class="tb-btn btn-primary btn-sm" onclick="go('wo',null)">عرض الكل</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>رقم الأمر</th><th>العنوان</th><th>النوع</th><th>الأولوية</th><th>الحالة</th><th>التاريخ</th><th>إجراء</th></tr></thead>
+          <tbody>
+            <tr><td><b>PM-2025-000001</b></td><td>الفحص الأسبوعي - مضخة #1</td><td><span class="badge bg-blue">وقائية</span></td><td><span class="badge bg-orange">متوسطة</span></td><td><span class="badge bg-green">✅ مكتمل</span></td><td>2025-03-17</td><td><button class="tb-btn btn-secondary btn-xs" onclick="openModal('woDetailModal')">تفاصيل</button></td></tr>
+            <tr><td><b>PM-2025-000002</b></td><td>اختبار المولد الشهري</td><td><span class="badge bg-blue">وقائية</span></td><td><span class="badge bg-red">عالية</span></td><td><span class="badge bg-orange">🔄 قيد التنفيذ</span></td><td>2025-03-19</td><td><button class="tb-btn btn-success btn-xs" onclick="toast('تم إنهاء أمر العمل ✅')">إنهاء</button></td></tr>
+            <tr class="row-alert"><td><b>CM-2025-000001</b></td><td>استبدال حشوة مضخة #2</td><td><span class="badge bg-red">تصحيحية</span></td><td><span class="badge bg-red">🔴 حرجة</span></td><td><span class="badge bg-red">⏰ متأخر</span></td><td style="color:var(--red);font-weight:600">2025-03-18 ⚠️</td><td><button class="tb-btn btn-warning btn-xs">تعيين</button></td></tr>
+            <tr><td><b>IN-2025-000001</b></td><td>فحص بوابة التصريف</td><td><span class="badge bg-purple">فحص</span></td><td><span class="badge bg-orange">عالية</span></td><td><span class="badge bg-gray">⏳ معلق</span></td><td>2025-03-24</td><td><button class="tb-btn btn-secondary btn-xs">تعيين</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: ASSETS ██ -->
+  <div id="p-assets" class="page">
+    <div class="g4 mb-2">
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">تشغيلي</div><div class="kpi-val" style="color:var(--green)">6</div></div>
+      <div class="kpi-card" style="--accent:var(--orange)"><div class="kpi-label">تحت صيانة</div><div class="kpi-val" style="color:var(--orange)">1</div></div>
+      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">خارج خدمة</div><div class="kpi-val" style="color:var(--red)">1</div></div>
+      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">أصول حرجة</div><div class="kpi-val">4</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <div><div class="card-title">⚙️ إدارة الأصول والمعدات</div><div class="card-sub">8 أصول مسجلة — مشروع سد الفرسان</div></div>
+        <div class="flex gap-2">
+          <div class="tb-search" style="max-width:220px"><span>🔍</span><input type="text" placeholder="بحث..."/></div>
+          <button class="tb-btn btn-primary" onclick="openModal('assetModal')">➕ إضافة أصل</button>
+        </div>
+      </div>
+      <div class="flex gap-2 mb-2" style="flex-wrap:wrap">
+        <button class="tb-btn btn-secondary btn-sm">الكل (8)</button>
+        <button class="tb-btn btn-sm" style="background:var(--green2);color:var(--green);border:none">✅ تشغيلي (6)</button>
+        <button class="tb-btn btn-sm" style="background:var(--orange2);color:var(--orange);border:none">🔧 صيانة (1)</button>
+        <button class="tb-btn btn-sm" style="background:var(--red2);color:var(--red);border:none">🔴 خارج خدمة (1)</button>
+        <button class="tb-btn btn-sm" style="background:var(--red2);color:var(--red);border:none">⚠️ حرجة فقط</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>كود الأصل</th><th>الاسم</th><th>الفئة</th><th>الحرجية</th><th>الحالة</th><th>آخر صيانة</th><th>الصيانة القادمة</th><th>ساعات التشغيل</th><th>الإجراءات</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge bg-gray">ASSET-DAM-00001</span></td><td><b>بوابة التصريف الرئيسية</b><br><span class="text-xs muted">Main Spillway Gate</span></td><td><span class="badge bg-blue">منشآت مدنية</span></td><td><span class="badge bg-red">🔴 حرجة</span></td><td><span class="badge bg-green">✅ تشغيلي</span></td><td>2025-03-01</td><td><span style="color:var(--orange);font-weight:600">2025-04-01</span></td><td>12,500 h</td><td><button class="tb-btn btn-secondary btn-xs" onclick="toast('رمز QR جاهز 🔲')">QR</button> <button class="tb-btn btn-secondary btn-xs" onclick="openModal('assetHistModal')">سجل</button></td></tr>
+            <tr><td><span class="badge bg-gray">ASSET-DAM-00002</span></td><td><b>مضخة المياه الرئيسية #1</b><br><span class="text-xs muted">Primary Water Pump #1</span></td><td><span class="badge bg-orange">ميكانيكي</span></td><td><span class="badge bg-red">🔴 حرجة</span></td><td><span class="badge bg-green">✅ تشغيلي</span></td><td>2025-03-17</td><td><span style="color:var(--green);font-weight:600">2025-03-25</span></td><td>8,230 h</td><td><button class="tb-btn btn-secondary btn-xs" onclick="toast('رمز QR جاهز 🔲')">QR</button> <button class="tb-btn btn-secondary btn-xs">سجل</button></td></tr>
+            <tr class="row-warning"><td><span class="badge bg-gray">ASSET-DAM-00003</span></td><td><b>مضخة المياه الرئيسية #2</b><br><span class="text-xs muted">Primary Water Pump #2</span></td><td><span class="badge bg-orange">ميكانيكي</span></td><td><span class="badge bg-red">🔴 حرجة</span></td><td><span class="badge bg-orange">🔧 صيانة</span></td><td>2025-03-10</td><td><span style="color:var(--red);font-weight:600">متأخر ⚠️</span></td><td>9,100 h</td><td><button class="tb-btn btn-secondary btn-xs">QR</button> <button class="tb-btn btn-warning btn-xs" onclick="openModal('woModal')">أمر عمل</button></td></tr>
+            <tr><td><span class="badge bg-gray">ASSET-DAM-00004</span></td><td><b>مولد احتياطي 500 KVA</b><br><span class="text-xs muted">Backup Generator</span></td><td><span class="badge bg-purple">كهربائي</span></td><td><span class="badge bg-red">🔴 حرجة</span></td><td><span class="badge bg-green">✅ تشغيلي</span></td><td>2025-03-19</td><td><span style="color:var(--blue);font-weight:600">2025-04-19</span></td><td>3,450 h</td><td><button class="tb-btn btn-secondary btn-xs">QR</button> <button class="tb-btn btn-secondary btn-xs">سجل</button></td></tr>
+            <tr><td><span class="badge bg-gray">ASSET-DAM-00005</span></td><td><b>حساسات مستوى المياه</b><br><span class="text-xs muted">Water Level Sensors</span></td><td><span class="badge bg-cyan">أجهزة وقياسات</span></td><td><span class="badge bg-orange">🟡 عالية</span></td><td><span class="badge bg-green">✅ تشغيلي</span></td><td>2025-03-05</td><td><span style="color:var(--blue);font-weight:600">2025-04-05</span></td><td>11,200 h</td><td><button class="tb-btn btn-secondary btn-xs">QR</button> <button class="tb-btn btn-secondary btn-xs">سجل</button></td></tr>
+            <tr><td><span class="badge bg-gray">ASSET-DAM-00006</span></td><td><b>لوحة التحكم MCC-01</b><br><span class="text-xs muted">Control Panel MCC-01</span></td><td><span class="badge bg-purple">كهربائي</span></td><td><span class="badge bg-orange">🟡 عالية</span></td><td><span class="badge bg-green">✅ تشغيلي</span></td><td>2025-02-20</td><td><span style="color:var(--blue);font-weight:600">2026-02-20</span></td><td>14,600 h</td><td><button class="tb-btn btn-secondary btn-xs">QR</button> <button class="tb-btn btn-secondary btn-xs">سجل</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: WORK ORDERS ██ -->
+  <div id="p-wo" class="page">
+    <div class="g4 mb-2">
+      <div class="kpi-card" style="--accent:var(--gray3)"><div class="kpi-label">إجمالي / Total</div><div class="kpi-val">5</div></div>
+      <div class="kpi-card" style="--accent:var(--orange)"><div class="kpi-label">قيد التنفيذ</div><div class="kpi-val" style="color:var(--orange)">2</div></div>
+      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">متأخرة ⚠️</div><div class="kpi-val" style="color:var(--red)">2</div></div>
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">مكتملة الشهر</div><div class="kpi-val" style="color:var(--green)">1</div></div>
+    </div>
+    <div class="alert alert-warn">⚠️ يوجد أمران متأخران يحتاجان اهتماماً فورياً — CM-2025-000001 و PM-2025-000003</div>
+    <div class="card">
+      <div class="card-hd">
+        <div><div class="card-title">📋 أوامر العمل</div></div>
+        <div class="flex gap-2">
+          <select class="finput" style="width:130px"><option>كل الأنواع</option><option>وقائية</option><option>تصحيحية</option><option>طارئة</option></select>
+          <select class="finput" style="width:130px"><option>كل الحالات</option><option>معلق</option><option>قيد التنفيذ</option><option>مكتمل</option></select>
+          <button class="tb-btn btn-primary" onclick="openModal('woModal')">➕ أمر عمل جديد</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>رقم الأمر</th><th>العنوان</th><th>الأصل</th><th>النوع</th><th>الأولوية</th><th>الحالة</th><th>التاريخ المجدول</th><th>المسند إلى</th><th>التكلفة</th><th>الإجراءات</th></tr></thead>
+          <tbody>
+            <tr><td><b>PM-2025-000001</b></td><td>الفحص الأسبوعي - مضخة #1</td><td>ASSET-DAM-00002</td><td><span class="badge bg-blue">وقائية</span></td><td><span class="badge bg-orange">متوسطة</span></td><td><span class="badge bg-green">✅ مكتمل</span></td><td>2025-03-17</td><td>أحمد الراشدي</td><td>620 ر.س</td><td><button class="tb-btn btn-secondary btn-xs" onclick="openModal('woDetailModal')">تفاصيل</button></td></tr>
+            <tr><td><b>PM-2025-000002</b></td><td>اختبار المولد الشهري</td><td>ASSET-DAM-00004</td><td><span class="badge bg-blue">وقائية</span></td><td><span class="badge bg-red">عالية</span></td><td><span class="badge bg-orange">🔄 قيد التنفيذ</span></td><td>2025-03-19</td><td>خالد الزهراني</td><td>—</td><td><button class="tb-btn btn-success btn-xs" onclick="toast('تم تسجيل الإنجاز ✅')">إنهاء</button></td></tr>
+            <tr class="row-alert"><td><b>CM-2025-000001</b></td><td>استبدال حشوة مضخة #2</td><td>ASSET-DAM-00003</td><td><span class="badge bg-red">تصحيحية</span></td><td><span class="badge bg-red">🔴 حرجة</span></td><td><span class="badge bg-red">⏰ متأخر</span></td><td style="color:var(--red);font-weight:600">2025-03-18 ⚠️</td><td>—</td><td>—</td><td><button class="tb-btn btn-primary btn-xs" onclick="toast('تم تعيين الفني خالد الزهراني ✅')">تعيين</button></td></tr>
+            <tr><td><b>IN-2025-000001</b></td><td>فحص بوابة التصريف الربعي</td><td>ASSET-DAM-00001</td><td><span class="badge bg-purple">فحص</span></td><td><span class="badge bg-orange">عالية</span></td><td><span class="badge bg-gray">⏳ معلق</span></td><td>2025-03-24</td><td>—</td><td>—</td><td><button class="tb-btn btn-secondary btn-xs">تعيين</button></td></tr>
+            <tr class="row-warning"><td><b>PM-2025-000003</b></td><td>فحص منظومة الكلورة</td><td>ASSET-DAM-00007</td><td><span class="badge bg-blue">وقائية</span></td><td><span class="badge bg-orange">متوسطة</span></td><td><span class="badge bg-red">⏰ متأخر</span></td><td style="color:var(--red)">2025-03-17 ⚠️</td><td>خالد الزهراني</td><td>—</td><td><button class="tb-btn btn-warning btn-xs">متابعة</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: MAINTENANCE PLANS ██ -->
+  <div id="p-plans" class="page">
+    <div class="card">
+      <div class="card-hd">
+        <div><div class="card-title">📅 خطط الصيانة الوقائية</div><div class="card-sub">7 خطط نشطة — Preventive Maintenance Plans</div></div>
+        <button class="tb-btn btn-primary" onclick="openModal('planModal')">➕ خطة جديدة</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>رقم الخطة</th><th>الاسم</th><th>الأصل</th><th>التكرار</th><th>المدة</th><th>التكلفة المقدرة</th><th>استحقاق قادم</th><th>المرجع</th><th>الحالة</th><th>إجراء</th></tr></thead>
+          <tbody>
+            <tr><td><b>PM-00001</b></td><td>فحص المضخة الأسبوعي<br><span class="text-xs muted">Weekly Pump Inspection</span></td><td>مضخة #1</td><td><span class="badge bg-blue">أسبوعي</span></td><td>2.0 h</td><td>500 ر.س</td><td><span style="color:var(--orange);font-weight:600">2025-03-25</span></td><td class="text-xs muted">ISO 55001</td><td><span class="badge bg-green">✅ نشط</span></td><td><button class="tb-btn btn-primary btn-xs" onclick="toast('تم إنشاء أمر عمل تلقائي ✅')">إنشاء WO</button></td></tr>
+            <tr><td><b>PM-00002</b></td><td>صيانة المضخة الشهرية</td><td>مضخة #1</td><td><span class="badge bg-orange">شهري</span></td><td>4.0 h</td><td>1,500 ر.س</td><td><span style="color:var(--green);font-weight:600">2025-04-19</span></td><td class="text-xs muted">ISO 55001</td><td><span class="badge bg-green">✅ نشط</span></td><td><button class="tb-btn btn-secondary btn-xs">تعديل</button></td></tr>
+            <tr><td><b>PM-00003</b></td><td>اختبار المولد الشهري</td><td>مولد 500KVA</td><td><span class="badge bg-orange">شهري</span></td><td>3.0 h</td><td>800 ر.س</td><td><span style="color:var(--red);font-weight:600">2025-03-22 ⚠️</span></td><td class="text-xs muted">NFPA 110</td><td><span class="badge bg-green">✅ نشط</span></td><td><button class="tb-btn btn-primary btn-xs" onclick="toast('تم إنشاء أمر عمل تلقائي ✅')">إنشاء WO</button></td></tr>
+            <tr><td><b>PM-00004</b></td><td>الصيانة السنوية للمولد</td><td>مولد 500KVA</td><td><span class="badge bg-purple">سنوي</span></td><td>16.0 h</td><td>12,000 ر.س</td><td><span style="color:var(--green);font-weight:600">2025-09-19</span></td><td class="text-xs muted">NFPA 110</td><td><span class="badge bg-green">✅ نشط</span></td><td><button class="tb-btn btn-secondary btn-xs">تعديل</button></td></tr>
+            <tr><td><b>PM-00005</b></td><td>فحص بوابة التصريف الربعي</td><td>بوابة التصريف</td><td><span class="badge bg-cyan">ربع سنوي</span></td><td>8.0 h</td><td>5,000 ر.س</td><td><span style="color:var(--blue);font-weight:600">2025-04-10</span></td><td class="text-xs muted">ICOLD</td><td><span class="badge bg-green">✅ نشط</span></td><td><button class="tb-btn btn-secondary btn-xs">تعديل</button></td></tr>
+            <tr><td><b>PM-00006</b></td><td>فحص لوحة التحكم السنوي</td><td>MCC-01</td><td><span class="badge bg-purple">سنوي</span></td><td>12.0 h</td><td>8,000 ر.س</td><td><span style="color:var(--blue);font-weight:600">2026-02-20</span></td><td class="text-xs muted">IEC 60439</td><td><span class="badge bg-green">✅ نشط</span></td><td><button class="tb-btn btn-secondary btn-xs">تعديل</button></td></tr>
+            <tr><td><b>PM-00007</b></td><td>فحص منظومة الكلورة الأسبوعي</td><td>منظومة الكلورة</td><td><span class="badge bg-blue">أسبوعي</span></td><td>1.5 h</td><td>300 ر.س</td><td><span style="color:var(--red);font-weight:600">متأخر ⚠️</span></td><td class="text-xs muted">WHO</td><td><span class="badge bg-green">✅ نشط</span></td><td><button class="tb-btn btn-warning btn-xs" onclick="toast('تم إنشاء أمر عمل طارئ ✅')">عاجل</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: INVENTORY ██ -->
+  <div id="p-inventory" class="page">
+    <div class="alert alert-warn">⚠️ 3 أصناف وصلت لنقطة إعادة الطلب — يرجى إصدار طلبات شراء</div>
+    <div class="g4 mb-2">
+      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">إجمالي الأصناف</div><div class="kpi-val">8</div></div>
+      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">مخزون منخفض</div><div class="kpi-val" style="color:var(--red)">3</div></div>
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">القيمة الإجمالية</div><div class="kpi-val" style="font-size:18px">28,540</div><div class="kpi-note">ريال سعودي</div></div>
+      <div class="kpi-card" style="--accent:var(--orange)"><div class="kpi-label">قطع حرجة</div><div class="kpi-val">2</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <div><div class="card-title">📦 قطع الغيار والمواد</div></div>
+        <div class="flex gap-2">
+          <div class="tb-search" style="max-width:200px"><span>🔍</span><input type="text" placeholder="بحث..."/></div>
+          <button class="tb-btn btn-secondary btn-sm">🔴 منخفض فقط</button>
+          <button class="tb-btn btn-primary" onclick="toast('فتح نموذج إضافة صنف...')">➕ إضافة صنف</button>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>رقم القطعة</th><th>الاسم</th><th>المخزون</th><th>الحد الأدنى</th><th>نقطة الطلب</th><th>تكلفة الوحدة</th><th>القيمة</th><th>الموّرد</th><th>الحالة</th><th>إجراء</th></tr></thead>
+          <tbody>
+            <tr class="row-alert"><td><b>SP-000001</b></td><td>دفاعة مضخة 6 إنش<br><span class="text-xs muted">Pump Impeller</span></td><td><b style="color:var(--red)">2</b> قطعة</td><td>2</td><td>2</td><td>1,200 ر.س</td><td>2,400 ر.س</td><td>الراشدي للمعدات</td><td><span class="badge bg-red">🔴 منخفض</span> <span class="badge bg-orange">⚠️ حرجة</span></td><td><button class="tb-btn btn-success btn-xs" onclick="openModal('txModal')">استلام</button> <button class="tb-btn btn-warning btn-xs" onclick="toast('تم إصدار طلب شراء RFQ-2025-001 ✅')">طلب شراء</button></td></tr>
+            <tr><td><b>SP-000002</b></td><td>طقم حشوة المحور<br><span class="text-xs muted">Shaft Seal Kit</span></td><td><b>8</b> قطعة</td><td>5</td><td>4</td><td>450 ر.س</td><td>3,600 ر.س</td><td>الراشدي للمعدات</td><td><span class="badge bg-green">✅ كافي</span> <span class="badge bg-orange">⚠️ حرجة</span></td><td><button class="tb-btn btn-secondary btn-xs" onclick="openModal('txModal')">صرف</button> <button class="tb-btn btn-success btn-xs" onclick="openModal('txModal')">استلام</button></td></tr>
+            <tr><td><b>SP-000003</b></td><td>بيرينج 6208-2RS</td><td><b>12</b> قطعة</td><td>6</td><td>6</td><td>85 ر.س</td><td>1,020 ر.س</td><td>الراشدي للمعدات</td><td><span class="badge bg-green">✅ كافي</span></td><td><button class="tb-btn btn-secondary btn-xs" onclick="openModal('txModal')">صرف</button> <button class="tb-btn btn-success btn-xs" onclick="openModal('txModal')">استلام</button></td></tr>
+            <tr><td><b>SP-000004</b></td><td>سير V-Belt B-72</td><td><b>20</b> قطعة</td><td>10</td><td>8</td><td>35 ر.س</td><td>700 ر.س</td><td>المصنع العربي</td><td><span class="badge bg-green">✅ كافي</span></td><td><button class="tb-btn btn-secondary btn-xs" onclick="openModal('txModal')">صرف</button></td></tr>
+            <tr class="row-alert"><td><b>SP-000005</b></td><td>فلتر 10 ميكرون<br><span class="text-xs muted">Filter Cartridge</span></td><td><b style="color:var(--red)">3</b> قطعة</td><td>4</td><td>4</td><td>180 ر.س</td><td>540 ر.س</td><td>المصنع العربي</td><td><span class="badge bg-red">🔴 منخفض</span></td><td><button class="tb-btn btn-warning btn-xs" onclick="toast('تم إصدار طلب شراء ✅')">طلب شراء</button></td></tr>
+            <tr><td><b>SP-000008</b></td><td>زيت تشحيم 20 لتر</td><td><b>15</b> وحدة</td><td>8</td><td>8</td><td>150 ر.س</td><td>2,250 ر.س</td><td>المصنع العربي</td><td><span class="badge bg-green">✅ كافي</span></td><td><button class="tb-btn btn-secondary btn-xs" onclick="openModal('txModal')">صرف</button> <button class="tb-btn btn-success btn-xs" onclick="openModal('txModal')">استلام</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: WORKFORCE ██ -->
+  <div id="p-workforce" class="page">
+    <div class="g4 mb-2">
+      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">إجمالي الكوادر</div><div class="kpi-val">3</div></div>
+      <div class="kpi-card" style="--accent:var(--orange)"><div class="kpi-label">أوامر عمل نشطة</div><div class="kpi-val" style="color:var(--orange)">4</div></div>
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">معدل الإنجاز</div><div class="kpi-val" style="color:var(--green)">87%</div></div>
+      <div class="kpi-card" style="--accent:var(--purple)"><div class="kpi-label">شهادات سارية</div><div class="kpi-val">8</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd"><div class="card-title">👷 الكوادر البشرية</div><button class="tb-btn btn-primary btn-sm" onclick="toast('فتح نموذج إضافة موظف...')">➕ إضافة موظف</button></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>الاسم</th><th>الدور</th><th>القسم</th><th>أوامر نشطة</th><th>المنجزة</th><th>حمل العمل</th></tr></thead>
+            <tbody>
+              <tr><td><b>مدير النظام</b><br><span class="text-xs muted">admin@omms.com</span></td><td><span class="badge bg-purple">مدير عام</span></td><td>إدارة</td><td>—</td><td>—</td><td>—</td></tr>
+              <tr><td><b>أحمد الراشدي</b><br><span class="text-xs muted">engineer@omms.com</span></td><td><span class="badge bg-blue">مهندس صيانة</span></td><td>الصيانة</td><td style="color:var(--orange);font-weight:600">2</td><td>12</td><td><span class="badge bg-orange">متوسط</span></td></tr>
+              <tr><td><b>خالد الزهراني</b><br><span class="text-xs muted">tech@omms.com</span></td><td><span class="badge bg-green">فني ميداني</span></td><td>التشغيل</td><td style="color:var(--red);font-weight:600">3</td><td>8</td><td><span class="badge bg-red">مرتفع</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title mb-2">📊 توزيع الأوامر</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div class="flex-bet text-sm"><span>أحمد الراشدي</span><span class="bold">2 نشط</span></div>
+            <div class="prog mt-1"><div class="prog-fill" style="width:40%;background:var(--blue)"></div></div>
+          </div>
+          <div>
+            <div class="flex-bet text-sm"><span>خالد الزهراني</span><span class="bold" style="color:var(--red)">3 نشط ⚠️</span></div>
+            <div class="prog mt-1"><div class="prog-fill" style="width:60%;background:var(--red)"></div></div>
+          </div>
+        </div>
+        <div class="alert alert-warn mt-2 text-sm">⚠️ خالد الزهراني لديه حمل عمل مرتفع — يوصى بإعادة التوزيع</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: CONTRACTS ██ -->
+  <div id="p-contracts" class="page">
+    <div class="alert alert-warn">⚠️ عقد CTR-2025-001 ينتهي خلال 27 يوماً — يرجى بدء إجراءات التجديد</div>
+    <div class="card">
+      <div class="card-hd">
+        <div><div class="card-title">📄 إدارة العقود</div><div class="card-sub">3 عقود نشطة</div></div>
+        <button class="tb-btn btn-primary" onclick="toast('فتح نموذج عقد جديد...')">➕ عقد جديد</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>رقم العقد</th><th>العنوان</th><th>الطرف الثاني</th><th>النوع</th><th>القيمة</th><th>بداية</th><th>نهاية</th><th>المتبقي</th><th>SLA</th><th>الحالة</th></tr></thead>
+          <tbody>
+            <tr class="row-warning"><td><b>CTR-2025-001</b></td><td>عقد صيانة المضخات</td><td>شركة الراشدي للمعدات</td><td><span class="badge bg-orange">صيانة</span></td><td>350,000 ر.س</td><td>2024-04-15</td><td style="color:var(--orange);font-weight:600">2025-04-15</td><td><b style="color:var(--orange)">27 يوم ⚠️</b></td><td>24h</td><td><span class="badge bg-orange">⚠️ قريب الانتهاء</span></td></tr>
+            <tr><td><b>CTR-2025-002</b></td><td>عقد توريد قطع الغيار</td><td>المصنع العربي للتقنية</td><td><span class="badge bg-blue">توريد</span></td><td>180,000 ر.س</td><td>2025-01-01</td><td>2025-12-31</td><td><b style="color:var(--green)">286 يوم</b></td><td>48h</td><td><span class="badge bg-green">✅ نشط</span></td></tr>
+            <tr><td><b>CTR-2024-005</b></td><td>عقد خدمات المختبر</td><td>مختبر التحكم البيئي</td><td><span class="badge bg-purple">خدمات</span></td><td>95,000 ر.س</td><td>2024-07-01</td><td>2025-06-30</td><td><b style="color:var(--blue)">103 يوم</b></td><td>72h</td><td><span class="badge bg-green">✅ نشط</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: BUDGET ██ -->
+  <div id="p-budget" class="page">
+    <div class="g4 mb-2">
+      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">الميزانية الإجمالية 2025</div><div class="kpi-val" style="font-size:20px">800,000</div><div class="kpi-note">ريال سعودي</div></div>
+      <div class="kpi-card" style="--accent:var(--orange)"><div class="kpi-label">المنصرف حتى الآن</div><div class="kpi-val" style="font-size:20px;color:var(--orange)">336,000</div><div class="kpi-note">42% من الميزانية</div></div>
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">الرصيد المتبقي</div><div class="kpi-val" style="font-size:20px;color:var(--green)">464,000</div><div class="kpi-note">58% متبقي</div></div>
+      <div class="kpi-card" style="--accent:var(--purple)"><div class="kpi-label">إنفاق مارس</div><div class="kpi-val" style="font-size:20px">42,500</div><div class="kpi-note">من 66,666 مخطط</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title mb-2">💰 توزيع الميزانية — 2025</div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div class="flex-bet text-sm mb-1"><span>عمالة / Labor</span><span class="bold">145,000 / 300,000 ر.س (48%)</span></div>
+            <div class="prog"><div class="prog-fill" style="width:48%;background:var(--blue)"></div></div>
+          </div>
+          <div>
+            <div class="flex-bet text-sm mb-1"><span>مواد / Materials</span><span class="bold">120,000 / 250,000 ر.س (48%)</span></div>
+            <div class="prog"><div class="prog-fill" style="width:48%;background:var(--orange)"></div></div>
+          </div>
+          <div>
+            <div class="flex-bet text-sm mb-1"><span>مقاولون / Contractors</span><span class="bold">55,000 / 150,000 ر.س (37%)</span></div>
+            <div class="prog"><div class="prog-fill" style="width:37%;background:var(--green)"></div></div>
+          </div>
+          <div>
+            <div class="flex-bet text-sm mb-1"><span>مصاريف عامة / Overhead</span><span class="bold">16,000 / 70,000 ر.س (23%)</span></div>
+            <div class="prog"><div class="prog-fill" style="width:23%;background:var(--purple)"></div></div>
+          </div>
+          <div>
+            <div class="flex-bet text-sm mb-1"><span>طوارئ / Contingency</span><span class="bold">0 / 30,000 ر.س (0%)</span></div>
+            <div class="prog"><div class="prog-fill" style="width:0%;background:var(--cyan)"></div></div>
+          </div>
+        </div>
+        <div class="alert alert-success mt-2 text-sm">✅ الإنفاق في الخطة — جميع البنود ضمن الحدود المعتمدة</div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><div class="card-title">📋 آخر المعاملات</div><button class="tb-btn btn-primary btn-sm" onclick="toast('فتح نموذج معاملة جديدة...')">➕ إضافة</button></div>
+        <table>
+          <thead><tr><th>التاريخ</th><th>النوع</th><th>الوصف</th><th>المبلغ</th></tr></thead>
+          <tbody>
+            <tr><td>2025-03-17</td><td><span class="badge bg-orange">عمالة</span></td><td>أجر فني صيانة — PM-2025-000001</td><td style="color:var(--red);font-weight:600">620 ر.س</td></tr>
+            <tr><td>2025-03-15</td><td><span class="badge bg-blue">مواد</span></td><td>زيت تشحيم × 5</td><td style="color:var(--red);font-weight:600">750 ر.س</td></tr>
+            <tr><td>2025-03-12</td><td><span class="badge bg-green">مقاولون</span></td><td>أعمال كهربائية MCC</td><td style="color:var(--red);font-weight:600">8,500 ر.س</td></tr>
+            <tr><td>2025-03-08</td><td><span class="badge bg-orange">عمالة</span></td><td>فريق فحص الأسبوعي</td><td style="color:var(--red);font-weight:600">1,200 ر.س</td></tr>
+            <tr><td>2025-03-05</td><td><span class="badge bg-blue">مواد</span></td><td>قطع غيار متنوعة</td><td style="color:var(--red);font-weight:600">3,400 ر.س</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: HSE ██ -->
+  <div id="p-hse" class="page">
+    <div class="g4 mb-2">
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">أيام بدون حوادث</div><div class="kpi-val" style="color:var(--green);font-size:32px">47</div></div>
+      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">حوادث هذا العام</div><div class="kpi-val">3</div></div>
+      <div class="kpi-card" style="--accent:var(--orange)"><div class="kpi-label">حوادث مفتوحة</div><div class="kpi-val" style="color:var(--orange)">2</div></div>
+      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">تصاريح عمل نشطة</div><div class="kpi-val">5</div></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('hse','inc',this)">⚠️ الحوادث</div>
+      <div class="tab" onclick="switchTab('hse','ptw',this)">📋 تصاريح PTW</div>
+      <div class="tab" onclick="switchTab('hse','risk',this)">🎯 تقييم المخاطر</div>
+    </div>
+    <div id="hse-inc" class="tab-panel active">
+      <div class="card">
+        <div class="card-hd"><div class="card-title">⚠️ سجل الحوادث والتقارير</div><button class="tb-btn btn-danger" onclick="toast('فتح نموذج تسجيل حادثة...')">🚨 تسجيل حادثة</button></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>رقم الحادثة</th><th>الوصف</th><th>الخطورة</th><th>التاريخ</th><th>الموقع</th><th>الحالة</th><th>ساعات العجز</th><th>إجراء</th></tr></thead>
+            <tbody>
+              <tr class="row-warning"><td><b>INC-2025-0001</b></td><td>انزلاق عامل قرب منطقة المضخة</td><td><span class="badge bg-orange">متوسطة</span></td><td>2025-03-10</td><td>Zone B - المضخات</td><td><span class="badge bg-orange">🔄 تحت المراجعة</span></td><td style="color:var(--orange);font-weight:600">4.0 h</td><td><button class="tb-btn btn-secondary btn-xs">تفاصيل</button></td></tr>
+              <tr class="row-alert"><td><b>INC-2025-0002</b></td><td>تسرب زيت بسيط من المضخة #2</td><td><span class="badge bg-blue">بسيطة</span></td><td>2025-03-15</td><td>غرفة المضخات</td><td><span class="badge bg-orange">🔄 مفتوحة</span></td><td>0</td><td><button class="tb-btn btn-success btn-xs" onclick="toast('تم إغلاق الحادثة ✅')">إغلاق</button></td></tr>
+              <tr><td><b>INC-2024-0015</b></td><td>حادثة وشيكة — خطر سقوط أداة</td><td><span class="badge bg-gray">وشيكة</span></td><td>2024-12-20</td><td>البوابة الرئيسية</td><td><span class="badge bg-green">✅ مغلقة</span></td><td>0</td><td><button class="tb-btn btn-secondary btn-xs">تقرير</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="hse-ptw" class="tab-panel">
+      <div class="card">
+        <div class="card-hd"><div class="card-title">📋 تصاريح العمل (Permit to Work)</div><button class="tb-btn btn-primary" onclick="toast('فتح نموذج إصدار تصريح...')">➕ إصدار تصريح</button></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>رقم التصريح</th><th>نوع العمل</th><th>الموقع</th><th>الفترة</th><th>مقاييس PPE المطلوبة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+            <tbody>
+              <tr><td><b>PTW-2025-001</b></td><td><span class="badge bg-red">أعمال ساخنة</span></td><td>ورشة الصيانة</td><td>2025-03-20</td><td>خوذة، نظارة، قفاز، حذاء أمان</td><td><span class="badge bg-green">✅ معتمد</span></td><td><button class="tb-btn btn-secondary btn-xs">طباعة</button></td></tr>
+              <tr><td><b>PTW-2025-002</b></td><td><span class="badge bg-orange">مساحة محصورة</span></td><td>خزان المياه الرئيسي</td><td>2025-03-22</td><td>جهاز تنفس، رسن، حارس</td><td><span class="badge bg-orange">⏳ بانتظار اعتماد</span></td><td><button class="tb-btn btn-success btn-xs" onclick="toast('تم اعتماد التصريح PTW-2025-002 ✅')">اعتماد</button> <button class="tb-btn btn-danger btn-xs" onclick="toast('تم رفض التصريح')">رفض</button></td></tr>
+              <tr><td><b>PTW-2025-003</b></td><td><span class="badge bg-purple">كهربائية</span></td><td>لوحة MCC-01</td><td>2025-03-25</td><td>قفاز عازل، خوذة، نظارة</td><td><span class="badge bg-gray">📝 مسودة</span></td><td><button class="tb-btn btn-primary btn-xs" onclick="toast('تم إرسال للاعتماد ✅')">إرسال</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="hse-risk" class="tab-panel">
+      <div class="card">
+        <div class="card-title mb-2">🎯 مصفوفة تقييم المخاطر</div>
+        <div class="g2">
+          <table>
+            <thead><tr><th>الخطر</th><th>الاحتمالية</th><th>الشدة</th><th>مستوى الخطر</th><th>الإجراء</th></tr></thead>
+            <tbody>
+              <tr><td>تسرب زيت من المضخات</td><td>عالية</td><td>متوسطة</td><td><span class="badge bg-orange">🟡 متوسط</span></td><td>فحص أسبوعي</td></tr>
+              <tr><td>انقطاع الكهرباء</td><td>متوسطة</td><td>عالية</td><td><span class="badge bg-red">🔴 عالي</span></td><td>مولد احتياطي نشط</td></tr>
+              <tr><td>فيضان فوق المنسوب</td><td>منخفضة</td><td>عالية جداً</td><td><span class="badge bg-orange">🟡 متوسط</span></td><td>مراقبة مستمرة</td></tr>
+              <tr><td>حرق كهربائي</td><td>منخفضة</td><td>عالية</td><td><span class="badge bg-green">🟢 منخفض</span></td><td>صيانة دورية</td></tr>
+            </tbody>
+          </table>
+          <div>
+            <div class="card-sub mb-2">إحصائيات HSE — 2025</div>
+            <div class="stat-row"><div class="stat-label">إجمالي الحوادث</div><div class="stat-val">3</div></div>
+            <div class="stat-row"><div class="stat-label">حوادث العجز (LTI)</div><div class="stat-val" style="color:var(--orange)">1</div></div>
+            <div class="stat-row"><div class="stat-label">ساعات العجز الكلية</div><div class="stat-val">4.0 h</div></div>
+            <div class="stat-row"><div class="stat-label">أيام بدون حوادث</div><div class="stat-val" style="color:var(--green)">47</div></div>
+            <div class="stat-row"><div class="stat-label">معدل الحوادث (Rate)</div><div class="stat-val">0.5</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: QUALITY ██ -->
+  <div id="p-quality" class="page">
+    <div class="g4 mb-2">
+      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">NCR مفتوحة</div><div class="kpi-val" style="color:var(--red)">2</div></div>
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">معدل إغلاق NCR</div><div class="kpi-val" style="color:var(--green)">85%</div></div>
+      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">فحوصات الشهر</div><div class="kpi-val">12</div></div>
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">معدل النجاح</div><div class="kpi-val" style="color:var(--green)">91%</div></div>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('quality','ncr',this)">📝 عدم المطابقة NCR</div>
+      <div class="tab" onclick="switchTab('quality','insp',this)">🔍 قوائم الفحص</div>
+    </div>
+    <div id="quality-ncr" class="tab-panel active">
+      <div class="card">
+        <div class="card-hd"><div class="card-title">📝 سجل عدم المطابقة (NCR)</div><button class="tb-btn btn-danger" onclick="toast('فتح نموذج رفع NCR...')">➕ رفع NCR</button></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>رقم NCR</th><th>الوصف</th><th>الأصل</th><th>الخطورة</th><th>التاريخ</th><th>الحالة</th><th>الإغلاق المستهدف</th><th>إجراء</th></tr></thead>
+            <tbody>
+              <tr><td><b>NCR-2025-0001</b></td><td>ضعف في ضغط خروج المضخة #2</td><td>ASSET-DAM-00003</td><td><span class="badge bg-orange">متوسطة</span></td><td>2025-03-15</td><td><span class="badge bg-orange">🔄 إجراء تصحيحي</span></td><td>2025-03-30</td><td><button class="tb-btn btn-secondary btn-xs">تفاصيل</button></td></tr>
+              <tr><td><b>NCR-2025-0002</b></td><td>تآكل في حامل البيرينج</td><td>ASSET-DAM-00002</td><td><span class="badge bg-red">كبيرة</span></td><td>2025-03-10</td><td><span class="badge bg-orange">🔄 تحت المراجعة</span></td><td>2025-03-25</td><td><button class="tb-btn btn-success btn-xs" onclick="toast('تم إغلاق NCR-2025-0002 ✅')">إغلاق</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="quality-insp" class="tab-panel">
+      <div class="card">
+        <div class="card-hd"><div class="card-title">🔍 قوائم الفحص والتفتيش</div><button class="tb-btn btn-primary" onclick="toast('فتح نموذج فحص جديد...')">➕ فحص جديد</button></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>رقم الفحص</th><th>الأصل</th><th>المفتش</th><th>التاريخ</th><th>البنود</th><th>النتيجة</th><th>الملاحظات</th></tr></thead>
+            <tbody>
+              <tr><td><b>INSP-2025-012</b></td><td>مضخة المياه #1</td><td>أحمد الراشدي</td><td>2025-03-17</td><td>4/4 ✅</td><td><span class="badge bg-green">✅ ناجح</span></td><td>جميع البنود مطابقة</td></tr>
+              <tr><td><b>INSP-2025-011</b></td><td>مضخة المياه #2</td><td>أحمد الراشدي</td><td>2025-03-15</td><td>3/4 ⚠️</td><td><span class="badge bg-orange">⚠️ مشروط</span></td><td>يلزم استبدال الحشوة</td></tr>
+              <tr><td><b>INSP-2025-010</b></td><td>المولد الاحتياطي</td><td>مراقب الجودة</td><td>2025-03-12</td><td>5/5 ✅</td><td><span class="badge bg-green">✅ ناجح</span></td><td>اجتاز اختبار التحميل</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: REPORTS ██ -->
+  <div id="p-reports" class="page">
+    <div class="g2 mb-2">
+      <div class="card" style="cursor:pointer" onclick="toast('جاري إنشاء التقرير...')">
+        <div style="font-size:36px mb-2">📊</div>
+        <div class="card-title mt-1">تقرير الأداء الشهري</div>
+        <div class="card-sub mb-2">Monthly Performance Report — KPIs &amp; WO Summary</div>
+        <div class="flex gap-2"><button class="tb-btn btn-primary btn-sm" onclick="event.stopPropagation();toast('جاري تصدير PDF... ✅')">📄 PDF</button><button class="tb-btn btn-success btn-sm" onclick="event.stopPropagation();toast('جاري تصدير Excel... ✅')">📊 Excel</button></div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="toast('جاري إنشاء التقرير...')">
+        <div style="font-size:36px mb-2">💰</div>
+        <div class="card-title mt-1">تقرير التكاليف والميزانية</div>
+        <div class="card-sub mb-2">Cost Analysis &amp; Budget Variance Report</div>
+        <div class="flex gap-2"><button class="tb-btn btn-primary btn-sm" onclick="event.stopPropagation();toast('جاري تصدير PDF... ✅')">📄 PDF</button><button class="tb-btn btn-success btn-sm" onclick="event.stopPropagation();toast('جاري تصدير Excel... ✅')">📊 Excel</button></div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="toast('جاري إنشاء التقرير...')">
+        <div style="font-size:36px mb-2">📦</div>
+        <div class="card-title mt-1">تقرير المخزون</div>
+        <div class="card-sub mb-2">Inventory Report — Stock Levels &amp; Valuation</div>
+        <div class="flex gap-2"><button class="tb-btn btn-primary btn-sm" onclick="event.stopPropagation();toast('جاري تصدير PDF... ✅')">📄 PDF</button><button class="tb-btn btn-success btn-sm" onclick="event.stopPropagation();toast('جاري تصدير Excel... ✅')">📊 Excel</button></div>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="toast('جاري إنشاء التقرير...')">
+        <div style="font-size:36px mb-2">⚠️</div>
+        <div class="card-title mt-1">تقرير السلامة والحوادث</div>
+        <div class="card-sub mb-2">HSE Report — Incidents &amp; Safety Statistics</div>
+        <div class="flex gap-2"><button class="tb-btn btn-primary btn-sm" onclick="event.stopPropagation();toast('جاري تصدير PDF... ✅')">📄 PDF</button><button class="tb-btn btn-success btn-sm" onclick="event.stopPropagation();toast('جاري تصدير Excel... ✅')">📊 Excel</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title">📈 مؤشرات الأداء الرئيسية (KPIs) — مارس 2025</div>
+        <select class="finput" style="width:150px"><option>مارس 2025</option><option>فبراير 2025</option><option>يناير 2025</option></select>
+      </div>
+      <table>
+        <thead><tr><th>المؤشر KPI</th><th>المستهدف</th><th>الفعلي</th><th>الانحراف</th><th>التقييم</th></tr></thead>
+        <tbody>
+          <tr><td><b>توافر الأصول</b> — Asset Availability</td><td>98%</td><td><b style="color:var(--orange)">96.5%</b></td><td>-1.5%</td><td><span class="badge bg-orange">⚠️ قريب من الهدف</span></td></tr>
+          <tr><td><b>معدل إنجاز أوامر العمل</b> — WO Completion Rate</td><td>95%</td><td><b style="color:var(--orange)">87%</b></td><td>-8%</td><td><span class="badge bg-red">❌ دون الهدف</span></td></tr>
+          <tr><td><b>متوسط وقت الإصلاح MTTR</b></td><td>&lt; 4 hrs</td><td><b style="color:var(--green)">2.8 h</b></td><td>+1.2h</td><td><span class="badge bg-green">✅ ممتاز</span></td></tr>
+          <tr><td><b>متوسط الوقت بين الأعطال MTBF</b></td><td>&gt; 500 hrs</td><td><b style="color:var(--green)">620 h</b></td><td>+120h</td><td><span class="badge bg-green">✅ ممتاز</span></td></tr>
+          <tr><td><b>الكفاءة الشاملة OEE</b></td><td>&gt; 85%</td><td><b style="color:var(--orange)">83.9%</b></td><td>-1.1%</td><td><span class="badge bg-orange">⚠️ قريب من الهدف</span></td></tr>
+          <tr><td><b>استخدام الميزانية</b></td><td>يتماشى مع الخطة</td><td><b style="color:var(--green)">42%</b></td><td>في الخطة</td><td><span class="badge bg-green">✅ في الخطة</span></td></tr>
+          <tr><td><b>حوادث العجز LTI</b></td><td>0</td><td><b style="color:var(--orange)">1</b></td><td>+1</td><td><span class="badge bg-orange">⚠️ يحتاج تحسين</span></td></tr>
+          <tr><td><b>معدل إغلاق NCR</b></td><td>&gt; 90%</td><td><b style="color:var(--orange)">85%</b></td><td>-5%</td><td><span class="badge bg-orange">⚠️ قريب من الهدف</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: AI ANALYTICS ██ -->
+  <div id="p-ai" class="page">
+    <div class="alert alert-info">🤖 محرك الذكاء الاصطناعي يعمل على تحليل بيانات الأصول وتوقع الأعطال — آخر تحديث: اليوم 6:00 AM</div>
+    <div class="g4 mb-2">
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">صحة الأسطول / Fleet Health</div><div class="kpi-val" style="color:var(--green)">B+</div><div class="kpi-note">78.5 / 100</div></div>
+      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">أصول في خطر عالي</div><div class="kpi-val" style="color:var(--red)">2</div></div>
+      <div class="kpi-card" style="--accent:var(--orange)"><div class="kpi-label">تنبؤات قطع غيار</div><div class="kpi-val" style="color:var(--orange)">4</div><div class="kpi-note">تحتاج طلب شراء</div></div>
+      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">دقة التنبؤ</div><div class="kpi-val" style="color:var(--blue)">82%</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title mb-2">🎯 تقييم خطر الفشل — الأصول الحرجة</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="padding:12px;background:var(--red2);border-radius:8px;border-right:4px solid var(--red)">
+            <div class="flex-bet"><span class="bold">مضخة المياه #2 — ASSET-DAM-00003</span><span class="badge bg-red">🔴 عالي الخطر 71%</span></div>
+            <div class="prog mt-1"><div class="prog-fill" style="width:71%;background:var(--red)"></div></div>
+            <div class="text-xs muted mt-1">السبب: صيانة متأخرة + 3 أعطال تصحيحية خلال 90 يوم</div>
+            <div class="text-xs mt-1" style="color:var(--red)">التوصية: فحص فوري وعمل وقائي عاجل</div>
+          </div>
+          <div style="padding:12px;background:var(--orange2);border-radius:8px;border-right:4px solid var(--orange)">
+            <div class="flex-bet"><span class="bold">المولد الاحتياطي — ASSET-DAM-00004</span><span class="badge bg-orange">🟡 متوسط 52%</span></div>
+            <div class="prog mt-1"><div class="prog-fill" style="width:52%;background:var(--orange)"></div></div>
+            <div class="text-xs muted mt-1">السبب: الاقتراب من نقطة الصيانة الشهرية + ارتفاع درجة حرارة بسيط</div>
+            <div class="text-xs mt-1" style="color:var(--orange)">التوصية: جدول صيانة خلال 7 أيام</div>
+          </div>
+          <div style="padding:12px;background:var(--green2);border-radius:8px;border-right:4px solid var(--green)">
+            <div class="flex-bet"><span class="bold">مضخة المياه #1 — ASSET-DAM-00002</span><span class="badge bg-green">🟢 منخفض 18%</span></div>
+            <div class="prog mt-1"><div class="prog-fill" style="width:18%;background:var(--green)"></div></div>
+            <div class="text-xs muted mt-1">تمت صيانة 2025-03-17 — حالة جيدة</div>
+          </div>
+          <div style="padding:12px;background:var(--green2);border-radius:8px;border-right:4px solid var(--green)">
+            <div class="flex-bet"><span class="bold">بوابة التصريف — ASSET-DAM-00001</span><span class="badge bg-green">🟢 منخفض 22%</span></div>
+            <div class="prog mt-1"><div class="prog-fill" style="width:22%;background:var(--green)"></div></div>
+            <div class="text-xs muted mt-1">حالة جيدة — فحص ربعي قادم 2025-04-10</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card mb-2">
+          <div class="card-title mb-2">📦 توقع قطع الغيار — 3 أشهر قادمة</div>
+          <table>
+            <thead><tr><th>القطعة</th><th>الحاجة المتوقعة</th><th>المخزون الحالي</th><th>النقص</th></tr></thead>
+            <tbody>
+              <tr class="row-alert"><td>دفاعة مضخة 6 إنش</td><td>4 قطع</td><td style="color:var(--red)">2 قطع</td><td><span class="badge bg-red">نقص 2 ⚠️</span></td></tr>
+              <tr class="row-warning"><td>فلتر 10 ميكرون</td><td>6 قطع</td><td style="color:var(--orange)">3 قطع</td><td><span class="badge bg-orange">نقص 3</span></td></tr>
+              <tr><td>طقم حشوة المحور</td><td>3 أطقم</td><td style="color:var(--green)">8 أطقم</td><td><span class="badge bg-green">كافي</span></td></tr>
+              <tr><td>بيرينج 6208-2RS</td><td>6 قطع</td><td style="color:var(--green)">12 قطعة</td><td><span class="badge bg-green">كافي</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-title mb-2">⚙️ توصيات تحسين الجداول</div>
+          <div class="alert alert-warn text-sm">🤖 ينصح النظام بتقليل فترة فحص المضخة #2 من <b>شهري إلى أسبوعي</b> مؤقتاً بسبب معدل الأعطال المرتفع</div>
+          <div class="alert alert-info text-sm">🤖 يمكن تمديد فترة فحص المولد من 30 إلى 35 يوماً بناءً على معدل الأداء الممتاز خلال الأشهر الثلاثة الماضية</div>
+          <div class="alert alert-success text-sm">✅ جميع الأصول الأخرى تعمل ضمن النطاق الأمثل</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: NOTIFICATIONS ██ -->
+  <div id="p-notifications" class="page">
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title">🔔 الإشعارات (3 غير مقروءة)</div>
+        <button class="tb-btn btn-secondary btn-sm" onclick="markAllRead()">✓ تعيين الكل كمقروء</button>
+      </div>
+      <div id="notifList">
+        <div style="padding:13px;border-bottom:1px solid var(--gray2);background:var(--blue3);border-right:3px solid var(--blue)">
+          <div class="flex-bet mb-1"><div class="bold">⏰ أمر عمل متأخر: CM-2025-000001</div><span class="badge bg-red">جديد</span></div>
+          <div class="text-sm muted">استبدال حشوة مضخة #2 — متأخر منذ 2025-03-18 — اتخذ إجراءً فورياً</div>
+          <div class="text-xs muted mt-1">منذ 2 ساعة</div>
+        </div>
+        <div style="padding:13px;border-bottom:1px solid var(--gray2);background:var(--orange2);border-right:3px solid var(--orange)">
+          <div class="flex-bet mb-1"><div class="bold">📦 مخزون منخفض: دفاعة مضخة 6 إنش</div><span class="badge bg-orange">جديد</span></div>
+          <div class="text-sm muted">القطعة SP-000001 وصلت لنقطة إعادة الطلب — المخزون: 2 قطعة فقط</div>
+          <div class="text-xs muted mt-1">منذ 5 ساعات</div>
+        </div>
+        <div style="padding:13px;border-bottom:1px solid var(--gray2);background:var(--orange2);border-right:3px solid var(--orange)">
+          <div class="flex-bet mb-1"><div class="bold">📅 صيانة مجدولة: اختبار المولد الشهري</div><span class="badge bg-orange">جديد</span></div>
+          <div class="text-sm muted">PM-00003 — موعد الاستحقاق خلال 3 أيام (2025-03-22)</div>
+          <div class="text-xs muted mt-1">منذ 6 ساعات</div>
+        </div>
+        <div style="padding:13px;border-bottom:1px solid var(--gray2)">
+          <div class="flex-bet mb-1"><div class="bold">📋 تم تعيين أمر عمل جديد</div><span class="badge bg-gray">مقروء</span></div>
+          <div class="text-sm muted">PM-2025-000002 — اختبار المولد الشهري</div>
+          <div class="text-xs muted mt-1">أمس</div>
+        </div>
+        <div style="padding:13px">
+          <div class="flex-bet mb-1"><div class="bold">📄 تنبيه انتهاء عقد: CTR-2025-001</div><span class="badge bg-gray">مقروء</span></div>
+          <div class="text-sm muted">عقد صيانة المضخات ينتهي خلال 27 يوماً</div>
+          <div class="text-xs muted mt-1">2025-03-18</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ██ PAGE: SETTINGS ██ -->
+  <div id="p-settings" class="page">
+    <div class="g2">
+      <div class="card">
+        <div class="card-title mb-2">👤 الملف الشخصي</div>
+        <div class="fgrid">
+          <div class="fg"><label class="flabel">الاسم الكامل</label><input class="finput" id="sName" value="مدير النظام"/></div>
+          <div class="fg"><label class="flabel">البريد الإلكتروني</label><input class="finput" id="sEmail" value="admin@omms.com"/></div>
+          <div class="fg"><label class="flabel">الجوال / WhatsApp</label><input class="finput" placeholder="+966 5XXXXXXXX"/></div>
+          <div class="fg"><label class="flabel">القسم</label><input class="finput" value="إدارة النظام"/></div>
+        </div>
+        <div class="fg"><label class="flabel">اللغة المفضلة</label>
+          <select class="finput" style="width:200px"><option value="ar" selected>العربية</option><option value="en">English</option></select>
+        </div>
+        <button class="tb-btn btn-primary" onclick="toast('تم حفظ الإعدادات بنجاح ✅')">💾 حفظ التغييرات</button>
+      </div>
+      <div class="card">
+        <div class="card-title mb-2">🔒 تغيير كلمة المرور</div>
+        <div class="fg"><label class="flabel">كلمة المرور الحالية</label><input type="password" class="finput" placeholder="••••••••"/></div>
+        <div class="fg"><label class="flabel">كلمة المرور الجديدة</label><input type="password" class="finput" placeholder="••••••••"/></div>
+        <div class="fg"><label class="flabel">تأكيد كلمة المرور</label><input type="password" class="finput" placeholder="••••••••"/></div>
+        <button class="tb-btn btn-primary" onclick="toast('تم تغيير كلمة المرور بنجاح ✅')">🔒 تحديث</button>
+      </div>
+      <div class="card">
+        <div class="card-title mb-2">🔔 إعدادات الإشعارات</div>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <label class="flex-bet" style="cursor:pointer"><span>إشعارات البريد الإلكتروني</span><input type="checkbox" checked/></label>
+          <label class="flex-bet" style="cursor:pointer"><span>إشعارات WhatsApp</span><input type="checkbox" checked/></label>
+          <label class="flex-bet" style="cursor:pointer"><span>تنبيهات الصيانة (7 أيام مسبقاً)</span><input type="checkbox" checked/></label>
+          <label class="flex-bet" style="cursor:pointer"><span>تنبيهات المخزون المنخفض</span><input type="checkbox" checked/></label>
+          <label class="flex-bet" style="cursor:pointer"><span>تنبيهات انتهاء العقود (30 يوم)</span><input type="checkbox" checked/></label>
+          <label class="flex-bet" style="cursor:pointer"><span>تقارير الأداء الأسبوعية (Email)</span><input type="checkbox"/></label>
+        </div>
+        <button class="tb-btn btn-primary mt-2" onclick="toast('تم حفظ إعدادات الإشعارات ✅')">💾 حفظ</button>
+      </div>
+      <div class="card">
+        <div class="card-title mb-2">ℹ️ معلومات النظام</div>
+        <div class="stat-row"><div class="stat-label">إصدار النظام</div><div class="stat-val">OMMS v2.0.0</div></div>
+        <div class="stat-row"><div class="stat-label">نوع النظام</div><div class="stat-val">ERP — O&amp;M Management</div></div>
+        <div class="stat-row"><div class="stat-label">Backend</div><div class="stat-val">Python FastAPI</div></div>
+        <div class="stat-row"><div class="stat-label">قاعدة البيانات</div><div class="stat-val">PostgreSQL / SQLite</div></div>
+        <div class="stat-row"><div class="stat-label">API Documentation</div><div class="stat-val"><a href="http://localhost:8000/api/docs" target="_blank" style="color:var(--blue)">/api/docs</a></div></div>
+        <div class="stat-row"><div class="stat-label">اللغات</div><div class="stat-val">العربية / English</div></div>
+        <div class="stat-row"><div class="stat-label">الترخيص</div><div class="stat-val">Enterprise License</div></div>
+        <div class="flex gap-2 mt-2">
+          <span class="badge bg-green">✅ النظام يعمل بشكل طبيعي</span>
+          <span class="badge bg-blue">🔌 API متصل</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /mainContent -->
+</main>
+</div><!-- /app -->
+
+<!-- ═══ MODALS ═══ -->
+<!-- Work Order Detail -->
+<div class="overlay" id="woDetailModal">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('woDetailModal')">✕</button>
+    <div class="modal-title">📋 تفاصيل أمر العمل — PM-2025-000001</div>
+    <div class="fgrid">
+      <div><div class="flabel">رقم أمر العمل</div><span class="badge bg-gray" style="font-size:13px">PM-2025-000001</span></div>
+      <div><div class="flabel">الحالة</div><span class="badge bg-green" style="font-size:13px">✅ مكتمل</span></div>
+      <div><div class="flabel">النوع</div><div>صيانة وقائية — Preventive</div></div>
+      <div><div class="flabel">الأولوية</div><span class="badge bg-orange">متوسطة</span></div>
+      <div><div class="flabel">الأصل</div><div>مضخة المياه الرئيسية #1</div></div>
+      <div><div class="flabel">التاريخ المجدول</div><div>2025-03-17</div></div>
+      <div><div class="flabel">المدة المقدرة</div><div>2.0 ساعة</div></div>
+      <div><div class="flabel">المدة الفعلية</div><div style="color:var(--orange)">2.5 ساعة</div></div>
+      <div><div class="flabel">التكلفة المقدرة</div><div>500 ر.س</div></div>
+      <div><div class="flabel">التكلفة الفعلية</div><div style="color:var(--orange)">620 ر.س</div></div>
+      <div><div class="flabel">المسند إلى</div><div>أحمد الراشدي</div></div>
+      <div><div class="flabel">المعتمد من</div><div>مدير النظام</div></div>
+    </div>
+    <div class="fg mt-2">
+      <div class="flabel">قائمة المراجعة المنجزة</div>
+      <div class="cl-item"><input type="checkbox" checked disabled/> فحص مستوى الزيت — <span style="color:var(--green)">✅ مستوى جيد</span></div>
+      <div class="cl-item"><input type="checkbox" checked disabled/> فحص التسربات — <span style="color:var(--green)">✅ لا يوجد تسرب</span></div>
+      <div class="cl-item"><input type="checkbox" checked disabled/> فحص الاهتزاز — <span style="color:var(--green)">✅ طبيعي (0.8 mm/s)</span></div>
+      <div class="cl-item"><input type="checkbox" checked disabled/> اختبار زر الإيقاف الطارئ — <span style="color:var(--green)">✅ يعمل بشكل صحيح</span></div>
+    </div>
+    <div class="fg">
+      <div class="flabel">ملاحظات الفني</div>
+      <div style="background:var(--gray);padding:10px;border-radius:8px;font-size:13px">تم الانتهاء من جميع بنود القائمة بنجاح. لوحظ ارتفاع طفيف في درجة حرارة محمل المحور (72°C مقابل الطبيعي 65°C) — يوصى بمراقبته خلال الأسبوع القادم.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="tb-btn btn-primary btn-sm" onclick="toast('جاري تصدير PDF أمر العمل... ✅')">📄 تصدير PDF</button>
+      <button class="tb-btn btn-secondary btn-sm" onclick="closeModal('woDetailModal')">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Work Order Modal -->
+<div class="overlay" id="woModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('woModal')">✕</button>
+    <div class="modal-title">➕ إنشاء أمر عمل جديد</div>
+    <div class="fgrid">
+      <div class="fg"><label class="flabel">العنوان *</label><input class="finput" placeholder="وصف موجز لأمر العمل"/></div>
+      <div class="fg"><label class="flabel">نوع أمر العمل *</label>
+        <select class="finput"><option>صيانة وقائية</option><option>صيانة تصحيحية</option><option>فحص</option><option>طارئ</option></select></div>
+      <div class="fg"><label class="flabel">الأصل *</label>
+        <select class="finput"><option>مضخة المياه #1</option><option>مضخة المياه #2</option><option>المولد الاحتياطي</option><option>بوابة التصريف</option></select></div>
+      <div class="fg"><label class="flabel">الأولوية</label>
+        <select class="finput"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option><option>حرجة</option></select></div>
+      <div class="fg"><label class="flabel">التاريخ المجدول</label><input type="date" class="finput"/></div>
+      <div class="fg"><label class="flabel">المسند إلى</label>
+        <select class="finput"><option>أحمد الراشدي</option><option>خالد الزهراني</option></select></div>
+      <div class="fg"><label class="flabel">المدة المقدرة (ساعة)</label><input type="number" class="finput" placeholder="2.0"/></div>
+      <div class="fg"><label class="flabel">التكلفة المقدرة (ر.س)</label><input type="number" class="finput" placeholder="500"/></div>
+    </div>
+    <div class="fg"><label class="flabel">الوصف التفصيلي</label><textarea class="finput" rows="3" placeholder="وصف مفصل للمهمة..."></textarea></div>
+    <div class="fg"><label class="flabel">يتطلب إيقاف الأصل؟</label>
+      <select class="finput" style="width:200px"><option>لا</option><option>نعم — يتطلب وقف التشغيل</option></select></div>
+    <div class="modal-foot">
+      <button class="tb-btn btn-primary" onclick="toast('✅ تم إنشاء أمر العمل PM-2025-000006 بنجاح');closeModal('woModal')">✅ إنشاء أمر العمل</button>
+      <button class="tb-btn btn-secondary" onclick="closeModal('woModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Asset Modal -->
+<div class="overlay" id="assetModal">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('assetModal')">✕</button>
+    <div class="modal-title">➕ إضافة أصل جديد</div>
+    <div class="fgrid">
+      <div class="fg"><label class="flabel">كود الأصل *</label><input class="finput" placeholder="ASSET-DAM-XXXXX"/></div>
+      <div class="fg"><label class="flabel">الاسم *</label><input class="finput" placeholder="اسم المعدة بالإنجليزية"/></div>
+      <div class="fg"><label class="flabel">الاسم بالعربي</label><input class="finput" placeholder="اسم المعدة بالعربية"/></div>
+      <div class="fg"><label class="flabel">الفئة</label><select class="finput"><option>ميكانيكي</option><option>كهربائي</option><option>منشآت مدنية</option><option>أجهزة وقياسات</option><option>HVAC</option></select></div>
+      <div class="fg"><label class="flabel">الصانع</label><input class="finput" placeholder="اسم الشركة الصانعة"/></div>
+      <div class="fg"><label class="flabel">الموديل</label><input class="finput" placeholder="رقم الموديل"/></div>
+      <div class="fg"><label class="flabel">الرقم التسلسلي</label><input class="finput"/></div>
+      <div class="fg"><label class="flabel">المورد</label><input class="finput"/></div>
+      <div class="fg"><label class="flabel">تاريخ التركيب</label><input type="date" class="finput"/></div>
+      <div class="fg"><label class="flabel">انتهاء الضمان</label><input type="date" class="finput"/></div>
+      <div class="fg"><label class="flabel">تكلفة الشراء (ر.س)</label><input type="number" class="finput"/></div>
+      <div class="fg"><label class="flabel">العمر الافتراضي (سنة)</label><input type="number" class="finput" value="20"/></div>
+      <div class="fg"><label class="flabel">الموقع</label><input class="finput" placeholder="Zone A — Building 1"/></div>
+      <div class="fg"><label class="flabel">درجة الحرجية</label><select class="finput"><option>منخفضة</option><option selected>متوسطة</option><option>عالية</option><option>حرجة</option></select></div>
+    </div>
+    <div class="modal-foot">
+      <button class="tb-btn btn-primary" onclick="toast('✅ تم إضافة الأصل وإنشاء رمز QR تلقائياً');closeModal('assetModal')">✅ إضافة الأصل</button>
+      <button class="tb-btn btn-secondary" onclick="closeModal('assetModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Maintenance Plan Modal -->
+<div class="overlay" id="planModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('planModal')">✕</button>
+    <div class="modal-title">➕ خطة صيانة وقائية جديدة</div>
+    <div class="fgrid">
+      <div class="fg"><label class="flabel">اسم الخطة *</label><input class="finput"/></div>
+      <div class="fg"><label class="flabel">الاسم بالعربي</label><input class="finput"/></div>
+      <div class="fg"><label class="flabel">الأصل *</label><select class="finput"><option>مضخة المياه #1</option><option>مضخة المياه #2</option><option>المولد الاحتياطي</option></select></div>
+      <div class="fg"><label class="flabel">تكرار الصيانة *</label><select class="finput"><option>يومي</option><option>أسبوعي</option><option selected>شهري</option><option>ربع سنوي</option><option>نصف سنوي</option><option>سنوي</option></select></div>
+      <div class="fg"><label class="flabel">المدة المقدرة (ساعة)</label><input type="number" class="finput" value="2"/></div>
+      <div class="fg"><label class="flabel">التكلفة المقدرة (ر.س)</label><input type="number" class="finput" value="500"/></div>
+      <div class="fg"><label class="flabel">تاريخ البداية</label><input type="date" class="finput"/></div>
+      <div class="fg"><label class="flabel">المرجع القياسي</label><input class="finput" placeholder="ISO 55001, API, NFPA..."/></div>
+    </div>
+    <div class="fg"><label class="flabel">احتياطات السلامة</label><textarea class="finput" rows="2" placeholder="إجراءات LOTO، معدات الوقاية..."></textarea></div>
+    <div class="modal-foot">
+      <button class="tb-btn btn-primary" onclick="toast('✅ تم إنشاء خطة الصيانة PM-00008');closeModal('planModal')">✅ إنشاء الخطة</button>
+      <button class="tb-btn btn-secondary" onclick="closeModal('planModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory Transaction Modal -->
+<div class="overlay" id="txModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('txModal')">✕</button>
+    <div class="modal-title">📦 حركة مخزون</div>
+    <div class="fg"><label class="flabel">نوع الحركة</label>
+      <select class="finput"><option value="in">📥 استلام (وارد)</option><option value="out">📤 صرف (صادر)</option><option value="adj">⚖️ تعديل رصيد</option></select></div>
+    <div class="fgrid">
+      <div class="fg"><label class="flabel">الكمية *</label><input type="number" class="finput" value="5"/></div>
+      <div class="fg"><label class="flabel">تكلفة الوحدة (ر.س)</label><input type="number" class="finput" value="1200"/></div>
+    </div>
+    <div class="fg"><label class="flabel">المرجع (أمر عمل / فاتورة)</label><input class="finput" placeholder="PM-2025-000001 أو INV-2025-001"/></div>
+    <div class="fg"><label class="flabel">ملاحظات</label><textarea class="finput" rows="2"></textarea></div>
+    <div class="modal-foot">
+      <button class="tb-btn btn-primary" onclick="toast('✅ تم تسجيل حركة المخزون بنجاح');closeModal('txModal')">✅ تأكيد الحركة</button>
+      <button class="tb-btn btn-secondary" onclick="closeModal('txModal')">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- Asset History Modal -->
+<div class="overlay" id="assetHistModal">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('assetHistModal')">✕</button>
+    <div class="modal-title">📋 سجل أمر العمل — بوابة التصريف الرئيسية</div>
+    <div class="g4 mb-2">
+      <div class="card" style="padding:12px"><div class="muted text-sm">إجمالي أوامر العمل</div><div class="bold" style="font-size:20px">15</div></div>
+      <div class="card" style="padding:12px"><div class="muted text-sm">إجمالي ساعات التوقف</div><div class="bold" style="font-size:20px">28h</div></div>
+      <div class="card" style="padding:12px"><div class="muted text-sm">إجمالي التكاليف</div><div class="bold" style="font-size:20px">42,500 ر.س</div></div>
+      <div class="card" style="padding:12px"><div class="muted text-sm">ساعات التشغيل</div><div class="bold" style="font-size:20px">12,500h</div></div>
+    </div>
+    <table>
+      <thead><tr><th>رقم أمر العمل</th><th>النوع</th><th>التاريخ</th><th>المدة</th><th>التكلفة</th><th>الحالة</th></tr></thead>
+      <tbody>
+        <tr><td><b>IN-2025-000001</b></td><td><span class="badge bg-purple">فحص</span></td><td>2025-03-24</td><td>—</td><td>—</td><td><span class="badge bg-gray">⏳ معلق</span></td></tr>
+        <tr><td><b>PM-2024-000022</b></td><td><span class="badge bg-blue">وقائية</span></td><td>2025-01-10</td><td>8h</td><td>5,200 ر.س</td><td><span class="badge bg-green">✅ مكتمل</span></td></tr>
+        <tr><td><b>PM-2024-000008</b></td><td><span class="badge bg-blue">وقائية</span></td><td>2024-10-10</td><td>8h</td><td>5,000 ر.س</td><td><span class="badge bg-green">✅ مكتمل</span></td></tr>
+      </tbody>
+    </table>
+    <div class="modal-foot"><button class="tb-btn btn-secondary" onclick="closeModal('assetHistModal')">إغلاق</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Auth ──────────────────────────────────────────────────
+const USERS = {
+  admin:     {pass:'admin123', name:'مدير النظام', role:'super_admin'},
+  engineer:  {pass:'eng123',   name:'أحمد الراشدي', role:'maintenance_engineer'},
+  technician:{pass:'tech123',  name:'خالد الزهراني', role:'field_technician'},
+};
+let currentUser = null;
+
+function doLogin() {
+  const u = document.getElementById('lu').value.trim();
+  const p = document.getElementById('lp').value;
+  const user = USERS[u];
+  if (user && user.pass === p) {
+    currentUser = {username: u, ...user};
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('appMain').style.display = 'flex';
+    document.getElementById('userAvatar').textContent = user.name[0];
+    document.getElementById('userAvatar').title = user.name + ' (' + user.role + ')';
+    document.getElementById('lerr').style.display = 'none';
+    toast('🎉 مرحباً ' + user.name);
+  } else {
+    document.getElementById('lerr').style.display = 'flex';
+  }
+}
+
+function doLogout() {
+  document.getElementById('appMain').style.display = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  toast('تم تسجيل الخروج بنجاح');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(m => m.classList.remove('open'));
+});
+
+// ── Navigation ────────────────────────────────────────────
+const PAGE_TITLES = {
+  dashboard:'لوحة التحكم',assets:'إدارة الأصول',plans:'خطط الصيانة',
+  wo:'أوامر العمل',inventory:'المخازن وقطع الغيار',workforce:'الكوادر البشرية',
+  contracts:'إدارة العقود',budget:'الميزانية والتكاليف',hse:'السلامة والمخاطر HSE',
+  quality:'مراقبة الجودة',reports:'التقارير ومؤشرات الأداء',ai:'الذكاء الاصطناعي والتنبؤ',
+  notifications:'الإشعارات',settings:'الإعدادات',
+};
+
+function go(page, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('p-' + page);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[page] || page;
+}
+
+// ── Modals ────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ── Tabs ──────────────────────────────────────────────────
+function switchTab(page, tab, el) {
+  const prefix = page + '-';
+  document.querySelectorAll('#p-' + page + ' .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#p-' + page + ' .tab-panel').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const panel = document.getElementById(prefix + tab);
+  if (panel) panel.classList.add('active');
+}
+
+// ── Toast ─────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.style.display = 'none', 3200);
+}
+
+// ── Notifications ─────────────────────────────────────────
+function markAllRead() {
+  document.getElementById('notifBadge').style.display = 'none';
+  document.getElementById('notifDot').style.display = 'none';
+  toast('✅ تم تعيين جميع الإشعارات كمقروءة');
+}
+
+// ── Language toggle ───────────────────────────────────────
+let lang = 'ar';
+function toggleLang() {
+  lang = lang === 'ar' ? 'en' : 'ar';
+  document.getElementById('langBtn').textContent = lang === 'ar' ? 'EN' : 'عر';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  toast(lang === 'ar' ? 'تم التبديل إلى العربية' : 'Switched to English');
+}
+
+// ── Init ──────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  document.getElementById('lu').focus();
+  document.getElementById('stockBadge').style.display = 'flex';
+});
+</script>
+</body>
+</html>

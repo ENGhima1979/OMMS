@@ -1,0 +1,31 @@
+{
+  "name": "omms-frontend",
+  "version": "2.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "react-scripts": "5.0.1",
+    "axios": "^1.7.7",
+    "recharts": "^2.12.7",
+    "i18next": "^23.15.1",
+    "react-i18next": "^15.0.2",
+    "zustand": "^5.0.0",
+    "react-hot-toast": "^2.4.1",
+    "react-hook-form": "^7.53.0",
+    "date-fns": "^4.1.0",
+    "@headlessui/react": "^2.1.8",
+    "lucide-react": "^0.447.0",
+    "clsx": "^2.1.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead"],
+    "development": ["last 1 chrome version"]
+  },
+  "proxy": "http://localhost:8000"
+}
