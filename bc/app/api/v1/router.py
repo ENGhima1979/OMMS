@@ -27,3 +27,6 @@ api_router.include_router(ai_analytics.router, prefix="/ai", tags=["🤖 AI & Pr
 
 from app.api.v1.endpoints import workforce
 api_router.include_router(workforce.router, prefix="/workforce", tags=["👷 Workforce"])
+
+from app.api.v1.endpoints import saas_plans
+api_router.include_router(saas_plans.router, prefix="/saas/plans", tags=["🌐 SaaS Plans"])
